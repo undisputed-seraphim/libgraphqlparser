@@ -1,25 +1,16 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(libgraphqlparser C CXX)
+cmake_minimum_required(VERSION 3.0)
+project(libgraphqlparser VERSION 0.1.0 LANGUAGES C CXX)
 
-SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" "${CMAKE_MODULE_PATH}")
+set(CMAKE_CXX_STANDARD 11)
 
-INCLUDE(version)
+#find_package(Python 3 REQUIRED)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-
-FIND_PACKAGE(PythonInterp 2 REQUIRED)
-IF (NOT PYTHON_VERSION_MAJOR EQUAL 2)
-  MESSAGE(FATAL_ERROR "Python 2 is required.")
-ENDIF()
-
-FIND_PROGRAM(CTYPESGEN_FOUND ctypesgen.py)
-
-FIND_PACKAGE(BISON 3)
-FIND_PACKAGE(FLEX)
-IF (BISON_FOUND)
+find_package(BISON 3.7 REQUIRED)
+find_package(FLEX 2.6 REQUIRED)
+if(BISON_FOUND)
   BISON_TARGET(graphqlparser_bison parser.ypp ${CMAKE_CURRENT_BINARY_DIR}/parser.tab.cpp)
   SET(BISON_LOCATION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/location.hh)
-ELSE()
+else()
   SET(BISON_graphqlparser_bison_OUTPUT_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/parser.tab.cpp)
   SET(BISON_graphqlparser_bison_OUTPUT_HEADER ${CMAKE_CURRENT_BINARY_DIR}/parser.tab.hpp)
   SET(BISON_graphqlparser_bison_OUTPUTS
@@ -36,20 +27,20 @@ ELSE()
     ${CMAKE_CURRENT_SOURCE_DIR}/parsergen/position.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/parsergen/stack.hh
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-ENDIF()
+endif()
 
-IF(FLEX_FOUND)
+if(FLEX_FOUND)
   FLEX_TARGET(GraphQLScanner lexer.lpp ${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp COMPILE_FLAGS "--header-file=${CMAKE_CURRENT_BINARY_DIR}/lexer.h")
   IF (BISON_FOUND)
     ADD_FLEX_BISON_DEPENDENCY(GraphQLScanner graphqlparser_bison)
   ENDIF()
-ELSE()
+else()
   SET(FLEX_GraphQLScanner_OUTPUTS ${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp)
   FILE(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/parsergen/lexer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/parsergen/lexer.h
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-ENDIF()
+endif()
 
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/c)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
@@ -105,8 +96,6 @@ GENERATE_AST_FILE(cxx_json_visitor_header JsonVisitor.h.inc)
 
 GENERATE_AST_FILE(cxx_json_visitor_impl JsonVisitor.cpp.inc)
 
-ADD_SUBDIRECTORY(python)
-
 OPTION(test "Build tests." OFF)
 
 INSTALL(DIRECTORY c ${CMAKE_CURRENT_BINARY_DIR}/c DESTINATION include/graphqlparser
@@ -121,19 +110,9 @@ INSTALL(FILES
   JsonVisitor.h
   ${BISON_LOCATION_HEADER}
   DESTINATION include/graphqlparser)
+
 INSTALL(TARGETS graphqlparser
   LIBRARY DESTINATION lib)
-
-if (UNIX)
-  # generate pkgconfig file
-  include(FindPkgConfig QUIET)
-  if(PKG_CONFIG_FOUND)
-    # generate .pc and install
-    configure_file("libgraphqlparser.pc.in" "libgraphqlparser.pc" @ONLY)
-    install(FILES       "${CMAKE_CURRENT_BINARY_DIR}/libgraphqlparser.pc"
-            DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig")
-  endif()
-endif()
 
 IF (test)
   ADD_SUBDIRECTORY(test)
