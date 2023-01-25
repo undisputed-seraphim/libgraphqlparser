@@ -5,12 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-%require "3"
+%require "3.0"
 
 %skeleton "lalr1.cc"
 
 %defines
-%define parser_class_name {GraphQLParserImpl}
+%define api.parser.class {GraphQLParserImpl}
 
 %define api.token.prefix {TOK_}
 
